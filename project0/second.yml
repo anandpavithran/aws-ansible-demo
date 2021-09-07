@@ -1,0 +1,84 @@
+- name: Ansible test
+  hosts: localhost
+  connection: local  
+  tasks:
+  - name: Upload public key to AWS
+    ec2_key:
+     name: test1-key
+     key_material: "{{ lookup('file', '/home/student/project0/sshkey.pub') }}"
+     region: ap-southeast-1
+     aws_access_key: AKIA3Z762TCTEEQPGXWH
+     aws_secret_key: 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
+  
+  - name: Create security group
+    ec2_group:
+     name: test1-securitygroup
+     description: "Sec group for webapp "
+     region: ap-southeast-1
+     vpc_id: vpc-063490618e65057fa  
+     aws_access_key: AKIA3Z762TCTEEQPGXWH
+     aws_secret_key: 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
+     rules:
+      - proto: tcp
+        ports:
+         - 22
+        cidr_ip: 0.0.0.0/0
+        rule_desc: allow all on ssh port
+      - proto: tcp
+        ports:
+         - 80 
+        cidr_ip: 0.0.0.0/0
+        rule_desc: allow all on web port
+    register: result_sec_group
+  - name: launching AWS instance using Ansible
+    ec2:
+     key_name: test1-key
+     instance_type: t2.micro
+     image: ami-082105f875acab993
+     region: ap-southeast-1
+     wait: yes
+     group: test1-securitygroup
+     count: 1
+     vpc_subnet_id: subnet-0fd9d2fc407952230  
+     assign_public_ip: yes
+     aws_access_key: AKIA3Z762TCTEEQPGXWH
+     aws_secret_key: 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
+     wait: yes
+     wait_timeout: 600  
+    register: ec2
+  - name: Create SSH Group to login dynamically to EC2 Instance
+    add_host:
+      #hostname: "{{ item.public_ip }}"
+     hostname: "{{ item.public_dns_name }}"
+     ansible_ssh_private_key_file: /home/student/project0/sshkey
+     groupname: ec2_server
+    with_items: "{{ec2.instances}}"    
+  - name: Wait for SSH to come up
+    wait_for: 
+      #host: "{{ item.public_ip }}" 
+     host: "{{ item.public_dns_name }}" 
+     port: 22 
+     state: started
+    with_items: "{{ec2.instances}}"   
+- name: WEBSERVER SETUP 
+  hosts: ec2_server
+  become: yes
+  remote_user: ec2-user
+  gather_facts: yes
+  tasks:
+    - name: Install httpd
+      yum:
+        name: httpd
+        state: present
+    - name: Start service
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+    - name: Deliver content
+      copy:
+        content: Hello from {{ansible_fqdn}}
+        dest: /var/www/html/index.html      
+    - debug: msg="Your Web server is ready.Please check url http://{{inventory_hostname}}"   
+       
+

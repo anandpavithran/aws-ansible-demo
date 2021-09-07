@@ -1,0 +1,14 @@
+---
+- name: Demo one - To fetch the details
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Get instances facts
+      ec2_instance_info:
+        aws_access_key: AKIA3Z762TCTEEQPGXWH 
+        aws_secret_key: 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 
+        region: ap-southeast-1 
+      register: ec2
+    - debug: var=ec2    
+...

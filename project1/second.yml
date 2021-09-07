@@ -1,0 +1,22 @@
+- name: WEBSERVER updating
+  hosts: ec2_server
+  become: yes
+  remote_user: ec2-user
+  gather_facts: yes
+  tasks:
+    - name: Install httpd
+      yum:
+        name: httpd
+        state: present
+    - name: Start service
+      service:
+        name: httpd
+        state: restarted
+        enabled: yes
+    - name: Deliver content
+      copy: 
+        content: Hello from {{ansible_fqdn}} UPDATED.Welcome to the world of Ansible 
+        dest: /var/www/html/index.html
+    - debug: msg="Your Web server is ready.Please check url http://{{ansible_hostname}}"   
+       
+

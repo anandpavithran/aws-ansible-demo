@@ -1,0 +1,7 @@
+localhost ansible_python_interpreter=/usr/bin/python3.6
+[ec2_server]
+13.250.6.228 
+[ec2_server:vars]
+ansible_ssh_private_key_file=/home/student/project1/sshkey
+
+
